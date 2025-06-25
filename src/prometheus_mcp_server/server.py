@@ -13,7 +13,6 @@ from mcp.server.fastmcp import FastMCP
 from prometheus_mcp_server.logging_config import get_logger
 
 dotenv.load_dotenv()
-mcp = FastMCP("Prometheus MCP")
 
 # Get logger instance
 logger = get_logger()
@@ -28,6 +27,13 @@ class PrometheusConfig:
     # Optional Org ID for multi-tenant setups
     org_id: Optional[str] = None
 
+@dataclass
+class ServerConfig:
+    transport: str
+    host: str
+    port: int
+    credentials_passthrough: bool
+
 config = PrometheusConfig(
     url=os.environ.get("PROMETHEUS_URL", ""),
     username=os.environ.get("PROMETHEUS_USERNAME", ""),
@@ -35,6 +41,24 @@ config = PrometheusConfig(
     token=os.environ.get("PROMETHEUS_TOKEN", ""),
     org_id=os.environ.get("ORG_ID", ""),
 )
+
+server_config = ServerConfig(
+    transport=os.environ.get("TRANSPORT", "stdio"),
+    host=os.environ.get("HOST", "0.0.0.0"),
+    port=int(os.environ.get("PORT", "8660")),
+    credentials_passthrough=os.environ.get("MCP_CREDENTIALS_PASSTHROUGH", "false").lower() == "true"
+)
+
+def create_server() -> FastMCP:
+    """Create MCP server based on transport configuration."""
+    if server_config.transport == "stdio":
+        mcp = FastMCP("Prometheus MCP")
+    else:
+        mcp = FastMCP("Prometheus MCP", host=server_config.host, port=server_config.port)
+    return mcp
+
+# Create the server instance
+mcp = create_server()
 
 def get_prometheus_auth():
     """Get authentication for Prometheus based on provided credentials."""

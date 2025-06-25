@@ -30,12 +30,34 @@ This is useful if you don't use certain functionality or if you don't want to ta
 
 ## Usage
 
+### Transport Support
+
+The server supports multiple MCP transports:
+
+- **stdio** (default): Standard input/output for local usage
+- **sse**: Server-Sent Events for web applications  
+- **streamable-http**: HTTP transport for remote access
+
+Configure the transport using environment variables:
+
+```env
+# Transport configuration
+TRANSPORT=stdio          # Options: stdio, sse, streamable-http
+HOST=0.0.0.0            # Host to bind (for HTTP/SSE transports)
+PORT=8660               # Port to bind (for HTTP/SSE transports)
+
+# Multi-tenant support
+MCP_CREDENTIALS_PASSTHROUGH=false  # Enable per-request credentials
+```
+
+### Configuration
+
 1. Ensure your Prometheus server is accessible from the environment where you'll run this MCP server.
 
 2. Configure the environment variables for your Prometheus server, either through a `.env` file or system environment variables:
 
 ```env
-# Required: Prometheus configuration
+# Required: Prometheus configuration (for static mode)
 PROMETHEUS_URL=http://your-prometheus-server:9090
 
 # Optional: Authentication credentials (if needed)
@@ -50,9 +72,44 @@ PROMETHEUS_TOKEN=your_token
 
 # Optional: For multi-tenant setups like Cortex, Mimir or Thanos
 ORG_ID=your_organization_id
+
+# Transport configuration
+TRANSPORT=stdio          # Options: stdio, sse, streamable-http
+HOST=0.0.0.0            # Host to bind (for HTTP/SSE transports)
+PORT=8660               # Port to bind (for HTTP/SSE transports)
+
+# Multi-tenant support
+MCP_CREDENTIALS_PASSTHROUGH=false  # Enable per-request credentials
 ```
 
-3. Add the server configuration to your client configuration file. For example, for Claude Desktop:
+### Running the Server
+
+#### Local Development
+
+```bash
+# Run with default stdio transport
+uv run python src/prometheus_mcp_server/main.py
+
+# Run with HTTP transport
+TRANSPORT=streamable-http uv run python src/prometheus_mcp_server/main.py
+
+# Run with SSE transport
+TRANSPORT=sse uv run python src/prometheus_mcp_server/main.py
+```
+
+#### Docker
+
+```bash
+# Run with stdio transport (default)
+docker run -i --rm -e PROMETHEUS_URL=http://your-prometheus:9090 ghcr.io/pab1it0/prometheus-mcp-server:latest
+
+# Run with HTTP transport
+docker run -p 8660:8660 --rm -e PROMETHEUS_URL=http://your-prometheus:9090 -e TRANSPORT=streamable-http ghcr.io/pab1it0/prometheus-mcp-server:latest
+```
+
+### Client Configuration
+
+#### For Claude Desktop (stdio transport):
 
 ```json
 {
@@ -65,6 +122,32 @@ ORG_ID=your_organization_id
         "--rm",
         "-e",
         "PROMETHEUS_URL",
+        "ghcr.io/pab1it0/prometheus-mcp-server:latest"
+      ],
+      "env": {
+        "PROMETHEUS_URL": "<url>"
+      }
+    }
+  }
+}
+```
+
+#### For HTTP/SSE transports:
+
+```json
+{
+  "mcpServers": {
+    "prometheus": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-p",
+        "8660:8660",
+        "--rm",
+        "-e",
+        "PROMETHEUS_URL",
+        "-e",
+        "TRANSPORT=streamable-http",
         "ghcr.io/pab1it0/prometheus-mcp-server:latest"
       ],
       "env": {

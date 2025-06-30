@@ -11,7 +11,7 @@ This guide will help you install and configure the Prometheus MCP Server for mon
 
 ## Installation Methods
 
-### Method 1: Docker with Environment Variables (Single User) - **RECOMMENDED**
+### Method 1: Docker with Environment Variables (Single User) - **DEVELOPMENT**
 
 **Best for**: Single user, production deployment, isolated environment
 
@@ -74,15 +74,15 @@ docker pull ghcr.io/olegische/prometheus-mcp-multi-user:0.1.0
 
 ---
 
-### Method 2: Docker with Custom Headers (Multi-User) - **ENTERPRISE**
+### Method 2: Docker with Custom Headers (Multi-User) - **RECOMMENDED**
 
 **Best for**: Multi-user environments, enterprise deployments, dynamic credentials
 
 **Step 1**: Start Docker container with custom headers support
 ```bash
-docker run --rm -p 8662:8662 \
+docker run --rm -p 8660:8660 \
   -e TRANSPORT=sse \
-  -e PORT=8662 \
+  -e PORT=8660 \
   -e HOST=0.0.0.0 \
   -e MCP_CREDENTIALS_PASSTHROUGH=true \
   -e PROMETHEUS_VERIFY_SSL=false \
@@ -95,7 +95,7 @@ docker run --rm -p 8662:8662 \
   "mcpServers": {
     "prometheus": {
       "type": "sse",
-      "url": "http://host.docker.internal:8662/sse",
+      "url": "http://host.docker.internal:8660/sse",
       "headers": {
         "X-Prometheus-URL": "http://your-prometheus-url:9090",
         "X-Prometheus-Token": "your-prometheus-token",
@@ -113,7 +113,7 @@ docker run --rm -p 8662:8662 \
   "mcpServers": {
     "prometheus": {
       "type": "sse",
-      "url": "http://host.docker.internal:8662/sse",
+      "url": "http://host.docker.internal:8660/sse",
       "headers": {
         "X-Prometheus-URL": "http://your-prometheus-url:9090",
         "X-Prometheus-Username": "your_username",
@@ -132,7 +132,7 @@ docker run --rm -p 8662:8662 \
   "mcpServers": {
     "prometheus": {
       "type": "sse",
-      "url": "http://host.docker.internal:8662/sse",
+      "url": "http://host.docker.internal:8660/sse",
       "headers": {
         "X-Prometheus-URL": "https://your-prometheus-url:9090",
         "X-Prometheus-Token": "your-prometheus-token",
@@ -158,10 +158,10 @@ services:
     container_name: prometheus-mcp
     platform: linux/amd64
     ports:
-      - "8662:8662"
+      - "8660:8660"
     environment:
       - TRANSPORT=sse
-      - PORT=8662
+      - PORT=8660
       - HOST=0.0.0.0
       - PROMETHEUS_VERIFY_SSL=false
       - MCP_CREDENTIALS_PASSTHROUGH=true
@@ -181,7 +181,7 @@ docker-compose up -d
   "mcpServers": {
     "prometheus": {
       "type": "sse",
-      "url": "http://host.docker.internal:8662/sse",
+      "url": "http://host.docker.internal:8660/sse",
       "headers": {
         "X-Prometheus-URL": "http://your-prometheus-url:9090",
         "X-Prometheus-Token": "your-prometheus-token",
@@ -202,9 +202,9 @@ MCPO (MCP-to-OpenAPI proxy) converts MCP servers into standard REST APIs, making
 
 **Step 1**: Start MCP server with custom headers
 ```bash
-docker run --rm -p 8662:8662 \
+docker run --rm -p 8660:8660 \
   -e TRANSPORT=sse \
-  -e PORT=8662 \
+  -e PORT=8660 \
   -e HOST=0.0.0.0 \
   -e MCP_CREDENTIALS_PASSTHROUGH=true \
   -e PROMETHEUS_VERIFY_SSL=false \
@@ -243,7 +243,7 @@ uvx mcpo --port 8600 --server-type "sse" \
         \"X-Scope-OrgID\": \"${HTTP_HEADER_SCOPE_ORGID}\",
         \"X-Prometheus-Verify-SSL\": \"${HTTP_HEADER_PROMETHEUS_VERIFY_SSL}\"
     }" \
-    -- http://localhost:8662/sse
+    -- http://host.docker.internal:8660/sse
 
 # For Basic authentication
 uvx mcpo --port 8600 --server-type "sse" \
@@ -254,7 +254,7 @@ uvx mcpo --port 8600 --server-type "sse" \
         \"X-Scope-OrgID\": \"${HTTP_HEADER_SCOPE_ORGID}\",
         \"X-Prometheus-Verify-SSL\": \"${HTTP_HEADER_PROMETHEUS_VERIFY_SSL}\"
     }" \
-    -- http://localhost:8662/sse
+    -- http://host.docker.internal:8660/sse
 
 # For self-signed certificates
 uvx mcpo --port 8600 --server-type "sse" \
@@ -264,7 +264,7 @@ uvx mcpo --port 8600 --server-type "sse" \
         \"X-Scope-OrgID\": \"${HTTP_HEADER_SCOPE_ORGID}\",
         \"X-Prometheus-Verify-SSL\": \"${HTTP_HEADER_PROMETHEUS_VERIFY_SSL}\"
     }" \
-    -- http://localhost:8662/sse
+    -- http://host.docker.internal:8660/sse
 ```
 
 ---

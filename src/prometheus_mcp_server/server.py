@@ -26,6 +26,8 @@ class PrometheusConfig:
     token: Optional[str] = None
     # Optional Org ID for multi-tenant setups
     org_id: Optional[str] = None
+    # SSL verification setting
+    verify_ssl: bool = True
 
 @dataclass
 class ServerConfig:
@@ -40,6 +42,7 @@ config = PrometheusConfig(
     password=os.environ.get("PROMETHEUS_PASSWORD", ""),
     token=os.environ.get("PROMETHEUS_TOKEN", ""),
     org_id=os.environ.get("ORG_ID", ""),
+    verify_ssl=os.environ.get("PROMETHEUS_VERIFY_SSL", "true").lower() == "true",
 )
 
 server_config = ServerConfig(
@@ -97,20 +100,25 @@ def _get_prometheus_config(context: Context) -> PrometheusConfig:
         prometheus_password = headers.get("x-prometheus-password") 
         prometheus_token = headers.get("x-prometheus-token")
         org_id = headers.get("x-scope-orgid")
+        # Extract SSL verification setting
+        verify_ssl_header = headers.get("x-prometheus-verify-ssl", "true")
+        verify_ssl = verify_ssl_header.lower() == "true"
         
         logger.debug("Extracted configuration from headers", 
                     url=prometheus_url, 
                     has_username=bool(prometheus_username),
                     has_password=bool(prometheus_password),
                     has_token=bool(prometheus_token),
-                    has_org_id=bool(org_id))
+                    has_org_id=bool(org_id),
+                    verify_ssl=verify_ssl)
         
         return PrometheusConfig(
             url=prometheus_url,
             username=prometheus_username,
             password=prometheus_password,
             token=prometheus_token,
-            org_id=org_id
+            org_id=org_id,
+            verify_ssl=verify_ssl
         )
         
     except Exception as e:
@@ -144,10 +152,10 @@ def make_prometheus_request(prometheus_config: PrometheusConfig, endpoint: str, 
         headers["X-Scope-OrgID"] = prometheus_config.org_id
 
     try:
-        logger.debug("Making Prometheus API request", endpoint=endpoint, url=url, params=params)
+        logger.debug("Making Prometheus API request", endpoint=endpoint, url=url, params=params, verify_ssl=prometheus_config.verify_ssl)
         
-        # Make the request with appropriate headers and auth
-        response = requests.get(url, params=params, auth=auth, headers=headers)
+        # Make the request with appropriate headers, auth, and SSL verification
+        response = requests.get(url, params=params, auth=auth, headers=headers, verify=prometheus_config.verify_ssl)
         
         response.raise_for_status()
         result = response.json()
